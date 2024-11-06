@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Proyectos FFS 2024</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/Municipios_2.js"></script>
+        <script src="data/ProyectosFSS_2024_3.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var title = new L.Control({'position':'topright'});
+        title.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        title.update = function () {
+            this._div.innerHTML = '<h2>Proyectos FFS 2024</h2>';
+        };
+        title.addTo(map);
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        map.createPane('pane_GoogleLabels_1');
+        map.getPane('pane_GoogleLabels_1').style.zIndex = 401;
+        var layer_GoogleLabels_1 = L.tileLayer('https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleLabels_1',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleLabels_1;
+        map.addLayer(layer_GoogleLabels_1);
+        function pop_Municipios_2(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="DESC_MUN"colspan="2"><strong>Municipio</strong><br />' + (feature.properties['DESC_MUN'] !== null ? autolinker.link(feature.properties['DESC_MUN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Departamento</th>\
+                        <td>' + (feature.properties['DESC_DEP'] !== null ? autolinker.link(feature.properties['DESC_DEP'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Perímetro</th>\
+                        <td>' + (feature.properties['shape_leng'] !== null ? autolinker.link(feature.properties['shape_leng'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Área</th>\
+                        <td>' + (feature.properties['shape_area'] !== null ? autolinker.link(feature.properties['shape_area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Municipios_2_0() {
+            return {
+                pane: 'pane_Municipios_2',
+                opacity: 1,
+                color: 'rgba(218,26,232,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Municipios_2');
+        map.getPane('pane_Municipios_2').style.zIndex = 402;
+        map.getPane('pane_Municipios_2').style['mix-blend-mode'] = 'normal';
+        var layer_Municipios_2 = new L.geoJson(json_Municipios_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Municipios_2',
+            layerName: 'layer_Municipios_2',
+            pane: 'pane_Municipios_2',
+            onEachFeature: pop_Municipios_2,
+            style: style_Municipios_2_0,
+        });
+        bounds_group.addLayer(layer_Municipios_2);
+        map.addLayer(layer_Municipios_2);
+        function pop_ProyectosFSS_2024_3(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">No.</th>\
+                        <td>' + (feature.properties['NO'] !== null ? autolinker.link(feature.properties['NO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Municipio</th>\
+                        <td>' + (feature.properties['MUNICIPIO'] !== null ? autolinker.link(feature.properties['MUNICIPIO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Departamento</th>\
+                        <td>' + (feature.properties['DEPARTAMEN'] !== null ? autolinker.link(feature.properties['DEPARTAMEN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Codigo SNIP</th>\
+                        <td>' + (feature.properties['SNIP'] !== null ? autolinker.link(feature.properties['SNIP'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ubicación Geográfica</th>\
+                        <td>' + (feature.properties['UBICACION_'] !== null ? autolinker.link(feature.properties['UBICACION_'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre del Proyecto</th>\
+                        <td>' + (feature.properties['NOMBRE_PRO'] !== null ? autolinker.link(feature.properties['NOMBRE_PRO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Beneficiados</th>\
+                        <td>' + (feature.properties['BENEFICIAR'] !== null ? autolinker.link(feature.properties['BENEFICIAR'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Longitud</th>\
+                        <td>' + (feature.properties['LONGITUD'] !== null ? autolinker.link(feature.properties['LONGITUD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Estado del Proyecto</th>\
+                        <td>' + (feature.properties['ESTADO'] !== null ? autolinker.link(feature.properties['ESTADO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_ProyectosFSS_2024_3_0(feature) {
+            switch(String(feature.properties['ESTADO'])) {
+                case 'EJECUCION':
+                    return {
+                pane: 'pane_ProyectosFSS_2024_3',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(50,222,130,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'PENDIENTE DE INICIO':
+                    return {
+                pane: 'pane_ProyectosFSS_2024_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(238,235,41,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'SUSPENDIDO':
+                    return {
+                pane: 'pane_ProyectosFSS_2024_3',
+                radius: 6.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(217,17,64,1.0)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_ProyectosFSS_2024_3',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(43,53,31,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_ProyectosFSS_2024_3');
+        map.getPane('pane_ProyectosFSS_2024_3').style.zIndex = 403;
+        map.getPane('pane_ProyectosFSS_2024_3').style['mix-blend-mode'] = 'normal';
+        var layer_ProyectosFSS_2024_3 = new L.geoJson(json_ProyectosFSS_2024_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ProyectosFSS_2024_3',
+            layerName: 'layer_ProyectosFSS_2024_3',
+            pane: 'pane_ProyectosFSS_2024_3',
+            onEachFeature: pop_ProyectosFSS_2024_3,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_ProyectosFSS_2024_3_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_ProyectosFSS_2024_3);
+        map.addLayer(layer_ProyectosFSS_2024_3);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        var overlaysTree = [
+            {label: 'ProyectosFSS_2024<br /><table><tr><td style="text-align: center;"><img src="legend/ProyectosFSS_2024_3_EJECUCION0.png" /></td><td>EJECUCION</td></tr><tr><td style="text-align: center;"><img src="legend/ProyectosFSS_2024_3_PENDIENTEDEINICIO1.png" /></td><td>PENDIENTE DE INICIO</td></tr><tr><td style="text-align: center;"><img src="legend/ProyectosFSS_2024_3_SUSPENDIDO2.png" /></td><td>SUSPENDIDO</td></tr><tr><td style="text-align: center;"><img src="legend/ProyectosFSS_2024_3_3.png" /></td><td></td></tr></table>', layer: layer_ProyectosFSS_2024_3},
+            {label: '<img src="legend/Municipios_2.png" /> Municipios', layer: layer_Municipios_2},
+            {label: "Google Labels", layer: layer_GoogleLabels_1},
+            {label: "Google Satellite", layer: layer_GoogleSatellite_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        map.on("zoomend", function(){
+
+                if (map.hasLayer(layer_Municipios_2)) {
+                    if (map.getZoom() <= 10 && map.getZoom() >= 19) {
+                        layer_Municipios_2.eachLayer(function (layer) {
+                            layer.openTooltip();
+                        });
+                    } else {
+                        layer_Municipios_2.eachLayer(function (layer) {
+                            layer.closeTooltip();
+                        });
+                    }
+                }
+        });
+        setBounds();
+                if (map.hasLayer(layer_Municipios_2)) {
+                    if (map.getZoom() <= 10 && map.getZoom() >= 19) {
+                        layer_Municipios_2.eachLayer(function (layer) {
+                            layer.openTooltip();
+                        });
+                    } else {
+                        layer_Municipios_2.eachLayer(function (layer) {
+                            layer.closeTooltip();
+                        });
+                    }
+                }
+        map.addControl(new L.Control.Search({
+            layer: layer_Municipios_2,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'DESC_MUN'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"ESTADO": "str","DEPARTAMEN": "str","MUNICIPIO": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_ESTADO = document.createElement('div');
+            div_ESTADO.id = "div_ESTADO";
+            div_ESTADO.className= "filterselect";
+            document.getElementById("menu").appendChild(div_ESTADO);
+            sel_ESTADO = document.createElement('select');
+            sel_ESTADO.multiple = true;
+            sel_ESTADO.size = 3;
+            sel_ESTADO.id = "sel_ESTADO";
+            var ESTADO_options_str = "<option value='' unselected></option>";
+            sel_ESTADO.onchange = function(){filterFunc()};
+            ESTADO_options_str  += '<option value="EJECUCION">EJECUCION</option>';
+            ESTADO_options_str  += '<option value="PENDIENTE DE INICIO">PENDIENTE DE INICIO</option>';
+            ESTADO_options_str  += '<option value="SUSPENDIDO">SUSPENDIDO</option>';
+            sel_ESTADO.innerHTML = ESTADO_options_str;
+            div_ESTADO.appendChild(sel_ESTADO);
+            var lab_ESTADO = document.createElement('div');
+            lab_ESTADO.innerHTML = 'ESTADO';
+            lab_ESTADO.className = 'filterlabel';
+            div_ESTADO.appendChild(lab_ESTADO);
+            var reset_ESTADO = document.createElement('div');
+            reset_ESTADO.innerHTML = 'clear filter';
+            reset_ESTADO.className = 'filterlabel';
+            reset_ESTADO.onclick = function() {
+                var options = document.getElementById("sel_ESTADO").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_ESTADO.appendChild(reset_ESTADO);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_DEPARTAMEN = document.createElement('div');
+            div_DEPARTAMEN.id = "div_DEPARTAMEN";
+            div_DEPARTAMEN.className= "filterselect";
+            document.getElementById("menu").appendChild(div_DEPARTAMEN);
+            sel_DEPARTAMEN = document.createElement('select');
+            sel_DEPARTAMEN.multiple = true;
+            sel_DEPARTAMEN.size = 10;
+            sel_DEPARTAMEN.id = "sel_DEPARTAMEN";
+            var DEPARTAMEN_options_str = "<option value='' unselected></option>";
+            sel_DEPARTAMEN.onchange = function(){filterFunc()};
+            DEPARTAMEN_options_str  += '<option value="CHIMALTENANGO">CHIMALTENANGO</option>';
+            DEPARTAMEN_options_str  += '<option value="CHIQUIMULA">CHIQUIMULA</option>';
+            DEPARTAMEN_options_str  += '<option value="EL PROGRESO">EL PROGRESO</option>';
+            DEPARTAMEN_options_str  += '<option value="ESCUINTLA">ESCUINTLA</option>';
+            DEPARTAMEN_options_str  += '<option value="GUATEMALA">GUATEMALA</option>';
+            DEPARTAMEN_options_str  += '<option value="HUEHUETENANGO">HUEHUETENANGO</option>';
+            DEPARTAMEN_options_str  += '<option value="JUTIAPA">JUTIAPA</option>';
+            DEPARTAMEN_options_str  += '<option value="PETEN">PETEN</option>';
+            DEPARTAMEN_options_str  += '<option value="QUETZALTENANGO">QUETZALTENANGO</option>';
+            DEPARTAMEN_options_str  += '<option value="QUICHE">QUICHE</option>';
+            DEPARTAMEN_options_str  += '<option value="SAN MARCOS">SAN MARCOS</option>';
+            DEPARTAMEN_options_str  += '<option value="SANTA ROSA">SANTA ROSA</option>';
+            DEPARTAMEN_options_str  += '<option value="SUCHITEPEQUEZ">SUCHITEPEQUEZ</option>';
+            sel_DEPARTAMEN.innerHTML = DEPARTAMEN_options_str;
+            div_DEPARTAMEN.appendChild(sel_DEPARTAMEN);
+            var lab_DEPARTAMEN = document.createElement('div');
+            lab_DEPARTAMEN.innerHTML = 'DEPARTAMEN';
+            lab_DEPARTAMEN.className = 'filterlabel';
+            div_DEPARTAMEN.appendChild(lab_DEPARTAMEN);
+            var reset_DEPARTAMEN = document.createElement('div');
+            reset_DEPARTAMEN.innerHTML = 'clear filter';
+            reset_DEPARTAMEN.className = 'filterlabel';
+            reset_DEPARTAMEN.onclick = function() {
+                var options = document.getElementById("sel_DEPARTAMEN").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_DEPARTAMEN.appendChild(reset_DEPARTAMEN);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_MUNICIPIO = document.createElement('div');
+            div_MUNICIPIO.id = "div_MUNICIPIO";
+            div_MUNICIPIO.className= "filterselect";
+            document.getElementById("menu").appendChild(div_MUNICIPIO);
+            sel_MUNICIPIO = document.createElement('select');
+            sel_MUNICIPIO.multiple = true;
+            sel_MUNICIPIO.size = 10;
+            sel_MUNICIPIO.id = "sel_MUNICIPIO";
+            var MUNICIPIO_options_str = "<option value='' unselected></option>";
+            sel_MUNICIPIO.onchange = function(){filterFunc()};
+            MUNICIPIO_options_str  += '<option value="CAMOTAN">CAMOTAN</option>';
+            MUNICIPIO_options_str  += '<option value="CATARINA">CATARINA</option>';
+            MUNICIPIO_options_str  += '<option value="CHIQUIMULA">CHIQUIMULA</option>';
+            MUNICIPIO_options_str  += '<option value="CHIQUIMULILLA">CHIQUIMULILLA</option>';
+            MUNICIPIO_options_str  += '<option value="CHUARRANCHO">CHUARRANCHO</option>';
+            MUNICIPIO_options_str  += '<option value="EL JICARO">EL JICARO</option>';
+            MUNICIPIO_options_str  += '<option value="EL PROGRESO">EL PROGRESO</option>';
+            MUNICIPIO_options_str  += '<option value="EL TEJAR">EL TEJAR</option>';
+            MUNICIPIO_options_str  += '<option value="FLORES">FLORES</option>';
+            MUNICIPIO_options_str  += '<option value="GUATEMALA">GUATEMALA</option>';
+            MUNICIPIO_options_str  += '<option value="HUITAN">HUITAN</option>';
+            MUNICIPIO_options_str  += '<option value="IXCHIGUAN">IXCHIGUAN</option>';
+            MUNICIPIO_options_str  += '<option value="MELCHOR">MELCHOR</option>';
+            MUNICIPIO_options_str  += '<option value="PACHALUM">PACHALUM</option>';
+            MUNICIPIO_options_str  += '<option value="PALIN">PALIN</option>';
+            MUNICIPIO_options_str  += '<option value="PASACO">PASACO</option>';
+            MUNICIPIO_options_str  += '<option value="RIO BRAVO">RIO BRAVO</option>';
+            MUNICIPIO_options_str  += '<option value="SAN ANDRES">SAN ANDRES</option>';
+            MUNICIPIO_options_str  += '<option value="SAN ANTONIO ILOTENANGO">SAN ANTONIO ILOTENANGO</option>';
+            MUNICIPIO_options_str  += '<option value="SAN BENITO">SAN BENITO</option>';
+            MUNICIPIO_options_str  += '<option value="SAN FRANCISCO">SAN FRANCISCO</option>';
+            MUNICIPIO_options_str  += '<option value="SAN JOSE">SAN JOSE</option>';
+            MUNICIPIO_options_str  += '<option value="SAN JOSE LA ARADA">SAN JOSE LA ARADA</option>';
+            MUNICIPIO_options_str  += '<option value="SAN JUAN TECUACO">SAN JUAN TECUACO</option>';
+            MUNICIPIO_options_str  += '<option value="SAN PEDRO JOCOPILAS">SAN PEDRO JOCOPILAS</option>';
+            MUNICIPIO_options_str  += '<option value="SAN PEDRO NECTA">SAN PEDRO NECTA</option>';
+            MUNICIPIO_options_str  += '<option value="SAN PEDRO YEPOCAPA">SAN PEDRO YEPOCAPA</option>';
+            MUNICIPIO_options_str  += '<option value="SANARATE">SANARATE</option>';
+            MUNICIPIO_options_str  += '<option value="SANTA CRUZ BALANYA">SANTA CRUZ BALANYA</option>';
+            MUNICIPIO_options_str  += '<option value="SIPACAPA">SIPACAPA</option>';
+            MUNICIPIO_options_str  += '<option value="TIQUISATE">TIQUISATE</option>';
+            MUNICIPIO_options_str  += '<option value="VILLA NUEVA">VILLA NUEVA</option>';
+            sel_MUNICIPIO.innerHTML = MUNICIPIO_options_str;
+            div_MUNICIPIO.appendChild(sel_MUNICIPIO);
+            var lab_MUNICIPIO = document.createElement('div');
+            lab_MUNICIPIO.innerHTML = 'MUNICIPIO';
+            lab_MUNICIPIO.className = 'filterlabel';
+            div_MUNICIPIO.appendChild(lab_MUNICIPIO);
+            var reset_MUNICIPIO = document.createElement('div');
+            reset_MUNICIPIO.innerHTML = 'clear filter';
+            reset_MUNICIPIO.className = 'filterlabel';
+            reset_MUNICIPIO.onclick = function() {
+                var options = document.getElementById("sel_MUNICIPIO").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_MUNICIPIO.appendChild(reset_MUNICIPIO);
+        resetLabels([layer_Municipios_2,layer_ProyectosFSS_2024_3]);
+        map.on("zoomend", function(){
+            resetLabels([layer_Municipios_2,layer_ProyectosFSS_2024_3]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_Municipios_2,layer_ProyectosFSS_2024_3]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_Municipios_2,layer_ProyectosFSS_2024_3]);
+        });
+        </script>
+    </body>
+</html>
